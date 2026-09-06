@@ -209,6 +209,25 @@
         </div>
       </n-form-item>
 
+      <n-form-item label="联合投稿">
+        <div style="display: flex; flex-direction: column; gap: 0;">
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <n-input v-model:value="staffSearchKeyword" placeholder="搜索UP主" style="flex: 1;" @keyup.enter="searchStaff" />
+            <n-button type="primary" :loading="staffSearchLoading" @click="searchStaff">搜索</n-button>
+          </div>
+          <div v-for="user in staffSearchResults" :key="user.mid" style="display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
+            <img :src="user.face" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 12px;" />
+            <span style="flex: 1; font-size: 14px;">{{ user.name }}</span>
+            <n-button type="primary" @click="addStaff(user)">添加</n-button>
+          </div>
+          <div v-for="(staff, index) in options.config.staffs" :key="staff.mid" style="display: flex; align-items: center; padding: 8px 12px; background: #fafafa; border-bottom: 1px solid #f0f0f0;">
+            <span style="flex: 1; margin-right: 12px; font-size: 14px;">{{ staff.title }} - {{ staff.name || 'UID:' + staff.mid }}</span>
+            <n-select v-model:value="staff.title" :options="staffTitleOptions" style="width: 120px; margin-right: 8px;" />
+            <n-button type="error" @click="removeStaff(index)">删除</n-button>
+          </div>
+        </div>
+      </n-form-item>
+
       <n-form-item label="粉丝动态">
         <n-input
           v-model:value="options.config.dynamic"
@@ -627,6 +646,83 @@ const loadReserveList = async () => {
   }
 };
 
+// 联合投稿相关
+const userInfoStore = useUserInfoStore();
+const staffSearchKeyword = ref("");
+const staffSearchResults = ref<any[]>([]);
+const staffSearchLoading = ref(false);
+const staffSearched = ref(false);
+const staffTitleOptions = [
+  { label: "参演", value: "参演" },
+  { label: "策划", value: "策划" },
+  { label: "设计", value: "设计" },
+  { label: "配音", value: "配音" },
+  { label: "后期", value: "后期" },
+  { label: "调音", value: "调音" },
+  { label: "剪辑", value: "剪辑" },
+  { label: "视频制作", value: "视频制作" },
+  { label: "填词", value: "填词" },
+  { label: "作词", value: "作词" },
+  { label: "作曲", value: "作曲" },
+  { label: "编曲", value: "编曲" },
+  { label: "演唱", value: "演唱" },
+  { label: "混音", value: "混音" },
+  { label: "曲绘", value: "曲绘" },
+  { label: "调教", value: "调教" },
+  { label: "合剪", value: "合剪" },
+  { label: "导演", value: "导演" },
+  { label: "编剧", value: "编剧" },
+  { label: "主演", value: "主演" },
+  { label: "封面设计", value: "封面设计" },
+  { label: "文案", value: "文案" },
+  { label: "合舞", value: "合舞" },
+  { label: "舞者", value: "舞者" },
+  { label: "摄影", value: "摄影" },
+  { label: "字幕", value: "字幕" },
+  { label: "渲染", value: "渲染" },
+  { label: "模型", value: "模型" },
+  { label: "动作", value: "动作" },
+  { label: "调校", value: "调校" },
+  { label: "演奏", value: "演奏" },
+  { label: "母带", value: "母带" },
+  { label: "手工制作", value: "手工制作" },
+  { label: "研发", value: "研发" },
+  { label: "编舞", value: "编舞" },
+];
+
+const searchStaff = async () => {
+  if (!staffSearchKeyword.value.trim()) return;
+  if (!userInfoStore.userInfo?.uid) {
+    console.error("未登录，无法搜索UP主");
+    return;
+  }
+  staffSearchLoading.value = true;
+  staffSearched.value = true;
+  try {
+    const res: any = await biliApi.searchStaffUser(staffSearchKeyword.value.trim(), userInfoStore.userInfo.uid);
+    staffSearchResults.value = res?.users || [];
+  } catch (e) {
+    console.error("搜索UP主失败", e);
+  } finally {
+    staffSearchLoading.value = false;
+  }
+};
+
+const addStaff = (user: { mid: number; name: string; face: string }) => {
+  if (!options.value.config.staffs) {
+    options.value.config.staffs = [];
+  }
+  if (options.value.config.staffs.some((s: any) => s.mid === user.mid)) {
+    return;
+  }
+  options.value.config.staffs.push({ title: "参演", mid: user.mid, name: user.name });
+  staffSearchResults.value = staffSearchResults.value.filter((u) => u.mid !== user.mid);
+};
+
+const removeStaff = (index: number) => {
+  options.value.config.staffs?.splice(index, 1);
+};
+
 onMounted(() => {
   loadReserveList();
 });
@@ -726,7 +822,6 @@ watchEffect(() => {
 });
 
 // 合集
-const userInfoStore = useUserInfoStore();
 const seasonList = ref<
   {
     label: string;

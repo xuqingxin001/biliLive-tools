@@ -328,12 +328,16 @@ export function formatOptions(options: BiliupConfig, coverDir: string | undefine
     cover = undefined;
   }
 
+  // 联合投稿时自动设置copyright为3
+  const hasStaffs = !!(options.staffs && options.staffs.length > 0);
+  const finalCopyright = hasStaffs ? 3 : options.copyright;
+
   let creationStatement: { id: -1 | 1 | 2 | 3 | 4 } | undefined = undefined;
-  if (options.copyright === 1 || options.copyright === 3) {
+  if (finalCopyright === 1 || finalCopyright === 3) {
     if (options.creationStatement) {
       creationStatement = { id: options.creationStatement };
     }
-    if (options.copyright === 3 && !options.creationStatement) {
+    if (finalCopyright === 3 && !options.creationStatement) {
       creationStatement = { id: -1 };
     }
   }
@@ -345,7 +349,7 @@ export function formatOptions(options: BiliupConfig, coverDir: string | undefine
     tid: 21,
     human_type2: options.human_type2,
     tag: tags.slice(0, 10).join(","),
-    copyright: options.copyright,
+    copyright: finalCopyright,
     source: options.source,
     dolby: options.dolby,
     lossless_music: options.hires,
@@ -364,6 +368,7 @@ export function formatOptions(options: BiliupConfig, coverDir: string | undefine
     space_hidden: options.space_hidden || 2,
     dtime: options.dtime ? options.dtime : undefined,
     act_reserve: options.act_reserve ? options.act_reserve : undefined,
+    staffs: options.staffs && options.staffs.length > 0 ? options.staffs.map((s: any) => ({ title: s.title, mid: Number(s.mid) })) : undefined,
     watermark:
       options.copyright === 2 || options.watermark === undefined
         ? undefined
@@ -387,6 +392,22 @@ async function getSeasonList(uid: number) {
 /**
  * 上传视频接口
  */
+
+// 搜索联合投稿UP主
+export async function searchStaffUser(uid: number, kw: string) {
+  try {
+    const client = createClient(uid);
+    const res = await (client.platform as any).request.get(
+      "https://member.bilibili.com/x/web/staff/user/search",
+      { params: { kw, t: Date.now() } },
+    );
+    return res;
+  } catch (e: any) {
+    log.error("搜索联合投稿UP主失败", e?.message);
+    return { data: { users: [] } };
+  }
+}
+
 export async function addMediaApi(
   uid: number,
   video: { cid: number; filename: string; title: string; desc?: string }[],
@@ -1279,6 +1300,7 @@ export const biliApi = {
   editMedia,
   getSeasonList,
   getReserveList,
+  searchStaffUser,
   getArchiveDetail,
   download,
   getSessionId,

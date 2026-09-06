@@ -279,4 +279,11 @@ router.post("/formatDesc", async (ctx) => {
   ctx.body = desc;
 });
 
+// 搜索联合投稿UP主
+router.get("/searchStaff", async (ctx) => {
+  const { kw, uid } = ctx.request.query as unknown as { kw: string; uid: string };
+  const data = await biliApi.searchStaffUser(Number(uid), kw);
+  ctx.body = data;
+});
+
 export default router;

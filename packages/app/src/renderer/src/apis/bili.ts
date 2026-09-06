@@ -1,4 +1,4 @@
-import request from "./request";
+﻿import request from "./request";
 
 import type { BiliupConfig, PartTitleFormatOptions } from "@biliLive-tools/types";
 import type { BiliApi } from "../../../types";
@@ -52,6 +52,13 @@ const getSeasonList = async (uid: number): Promise<ReturnType<BiliApi["getSeason
 const getReserveList = async (uid: number) => {
   const res = await request.get("/bili/reserveList", {
     params: { uid },
+  });
+  return res.data;
+};
+
+const searchStaffUser = async (kw: string, uid: number) => {
+  const res = await request.get("/bili/searchStaff", {
+    params: { kw, uid },
   });
   return res.data;
 };
@@ -175,6 +182,7 @@ const bili = {
   validUploadParams,
   getArchives,
   getReserveList,
+  searchStaffUser,
   checkTag,
   searchTopic,
   getSeasonList,
